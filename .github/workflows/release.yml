@@ -1,0 +1,64 @@
+name: Build and Release Click2Key
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v2
+
+      - name: Install 7-Zip
+        run: choco install 7zip -y
+
+      - name: Restore NuGet Packages
+        run: nuget restore Click2Key.sln
+
+      - name: Build Solution
+        shell: cmd
+        run: |
+          msbuild Click2Key.sln ^
+            /p:Configuration=Release ^
+            /p:Platform="Any CPU"
+
+      - name: Create Release Staging Folder
+        shell: powershell
+        run: |
+          Remove-Item -Recurse -Force release-staging -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path release-staging
+          Copy-Item -Path ".\Click2Key\bin\Release\*" -Destination ".\release-staging\" -Recurse -Force
+
+      - name: Create Self Extracting Archive
+        shell: cmd
+        run: |
+          cd release-staging
+          7z a -t7z ..\Click2Key.7z * -mx=9
+          cd ..
+          copy /b "C:\Program Files\7-Zip\7z.sfx" + Click2Key.7z Click2Key-Setup.exe
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Click2Key-Setup
+          path: Click2Key-Setup.exe
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Click2Key v1.0.${{ github.run_number }}
+          generate_release_notes: true
+          files: Click2Key-Setup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
