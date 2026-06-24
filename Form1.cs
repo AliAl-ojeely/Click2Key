@@ -35,7 +35,7 @@ namespace Click2Key
         private Bitmap cachedGradient;
         private Size lastClientSize;
         private int lastFlowPanelWidth = -1;
-
+        private bool lastRenderedTheme = false;
         public frmMain()
         {
             InitializeComponent();
@@ -189,7 +189,7 @@ namespace Click2Key
             cmbDelay.SelectedIndex = 0;
 
             this.SuspendLayout();
-            shortcutsRegistry = ShortcutsRepository.GetAll();   // uses the external ShortcutData
+            shortcutsRegistry = ShortcutsRepository.GetAll();
             RenderShortcuts();
             this.ResumeLayout();
 
@@ -233,7 +233,7 @@ namespace Click2Key
                 // Context menu translations
                 miOpen.Text = "فتح";
                 miExit.Text = "خروج";
-                UpdateTrayToggleText();   // sets correct toggle text
+                UpdateTrayToggleText();
             }
             else
             {
@@ -266,8 +266,10 @@ namespace Click2Key
         {
             if (this.ClientRectangle.Width == 0 || this.ClientRectangle.Height == 0) return;
 
-            if (cachedGradient != null && this.ClientSize == lastClientSize) return;
+            if (cachedGradient != null && this.ClientSize == lastClientSize && isLightTheme == lastRenderedTheme) return;
+
             lastClientSize = this.ClientSize;
+            lastRenderedTheme = isLightTheme;
             cachedGradient?.Dispose();
 
             cachedGradient = new Bitmap(this.ClientRectangle.Width, this.ClientRectangle.Height);

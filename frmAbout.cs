@@ -48,7 +48,7 @@ namespace Click2Key
                 lnklblEmail.Text = "البريد: alialojeely@gmail.com";
                 lnklblGithub.Text = "حساب GitHub";
                 lnklblPortfolio.Text = "معرض الأعمال (Portfolio)";
-                lnklblVersion.Text = "اصدار: 1.0";
+                lnklblVersion.Text = "اصدار: 1.1";
 
                 lnklblNmae.RightToLeft = RightToLeft.Yes;
                 lnklblEmail.RightToLeft = RightToLeft.Yes;
@@ -64,7 +64,7 @@ namespace Click2Key
                 lnklblEmail.Text = "Email: alialojeely@gmail.com";
                 lnklblGithub.Text = "GitHub Profile";
                 lnklblPortfolio.Text = "Portfolio Website";
-                lnklblVersion.Text = "Version: 1.0";
+                lnklblVersion.Text = "Version: 1.1";
 
                 lnklblNmae.RightToLeft = RightToLeft.No;
                 lnklblEmail.RightToLeft = RightToLeft.No;

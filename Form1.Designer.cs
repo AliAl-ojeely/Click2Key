@@ -761,7 +761,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "frmMain";
-            this.Text = "Click2Key v1.0";
+            this.Text = "Click2Key v1.1";
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.panel3.ResumeLayout(false);
             this.panel3.PerformLayout();
