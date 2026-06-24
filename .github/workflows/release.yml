@@ -1,7 +1,7 @@
 name: Build and Release Click2Key
 
 on:
-  workflow_dispatch:          # manually trigger from Actions tab
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,14 +19,9 @@ jobs:
       - name: Setup NuGet
         uses: nuget/setup-nuget@v2
 
-      - name: Install 7-Zip
-        run: choco install 7zip -y
-
-      # Restore packages using the solution file
       - name: Restore NuGet Packages
-        run: nuget restore Click2Key.sln   # <-- use .sln, not .slnx
+        run: nuget restore Click2Key.sln   # or .csproj if no .sln
 
-      # Build the solution in Release mode, Any CPU
       - name: Build Solution
         shell: cmd
         run: |
@@ -34,38 +29,30 @@ jobs:
             /p:Configuration=Release ^
             /p:Platform="Any CPU"
 
-      # Prepare a folder with all build outputs
       - name: Create Release Staging Folder
         shell: powershell
         run: |
           Remove-Item -Recurse -Force release-staging -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path release-staging
-          # Adjust the path if your .exe is in a different subfolder
           Copy-Item -Path ".\Click2Key\bin\Release\*" -Destination ".\release-staging\" -Recurse -Force
 
-      # Create a self-extracting setup using 7-Zip
-      - name: Create Self Extracting Archive
-        shell: cmd
+      - name: Create ZIP Archive
+        shell: powershell
         run: |
-          cd release-staging
-          7z a -t7z ..\Click2Key.7z * -mx=9
-          cd ..
-          copy /b "C:\Program Files\7-Zip\7z.sfx" + Click2Key.7z Click2Key-Setup.exe
+          Compress-Archive -Path ".\release-staging\*" -DestinationPath "Click2Key.zip" -CompressionLevel Optimal
 
-      # Upload the setup file as an artifact (for verification)
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Click2Key-Setup
-          path: Click2Key-Setup.exe
+          name: Click2Key-Release
+          path: Click2Key.zip
 
-      # Create a GitHub Release and attach the setup file
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: Click2Key v1.0.${{ github.run_number }}
           generate_release_notes: true
-          files: Click2Key-Setup.exe
+          files: Click2Key.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
