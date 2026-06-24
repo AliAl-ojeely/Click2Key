@@ -1,7 +1,7 @@
 name: Build and Release Click2Key
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:          # manually trigger from Actions tab
 
 permissions:
   contents: write
@@ -22,9 +22,11 @@ jobs:
       - name: Install 7-Zip
         run: choco install 7zip -y
 
+      # Restore packages using the solution file
       - name: Restore NuGet Packages
-        run: nuget restore Click2Key.sln
+        run: nuget restore Click2Key.sln   # <-- use .sln, not .slnx
 
+      # Build the solution in Release mode, Any CPU
       - name: Build Solution
         shell: cmd
         run: |
@@ -32,13 +34,16 @@ jobs:
             /p:Configuration=Release ^
             /p:Platform="Any CPU"
 
+      # Prepare a folder with all build outputs
       - name: Create Release Staging Folder
         shell: powershell
         run: |
           Remove-Item -Recurse -Force release-staging -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path release-staging
+          # Adjust the path if your .exe is in a different subfolder
           Copy-Item -Path ".\Click2Key\bin\Release\*" -Destination ".\release-staging\" -Recurse -Force
 
+      # Create a self-extracting setup using 7-Zip
       - name: Create Self Extracting Archive
         shell: cmd
         run: |
@@ -47,12 +52,14 @@ jobs:
           cd ..
           copy /b "C:\Program Files\7-Zip\7z.sfx" + Click2Key.7z Click2Key-Setup.exe
 
+      # Upload the setup file as an artifact (for verification)
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Click2Key-Setup
           path: Click2Key-Setup.exe
 
+      # Create a GitHub Release and attach the setup file
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
