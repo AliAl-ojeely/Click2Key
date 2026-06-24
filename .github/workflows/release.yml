@@ -20,12 +20,12 @@ jobs:
         uses: nuget/setup-nuget@v2
 
       - name: Restore NuGet Packages
-        run: nuget restore Click2Key.sln   # or .csproj if no .sln
+        run: nuget restore .\Click2Key\Click2Key.csproj   # adjust path if different
 
-      - name: Build Solution
+      - name: Build Project
         shell: cmd
         run: |
-          msbuild Click2Key.sln ^
+          msbuild .\Click2Key\Click2Key.csproj ^
             /p:Configuration=Release ^
             /p:Platform="Any CPU"
 
