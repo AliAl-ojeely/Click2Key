@@ -1,4 +1,4 @@
-name: Build and Release Click2Key
+name: Build and Release Click2Key (Inno Setup)
 
 on:
   workflow_dispatch:
@@ -19,33 +19,46 @@ jobs:
       - name: Setup NuGet
         uses: nuget/setup-nuget@v2
 
+      # Try to restore packages – adjust .csproj path if needed
       - name: Restore NuGet Packages
-        run: nuget restore .\Click2Key\Click2Key.csproj   # adjust path if different
+        run: nuget restore Click2Key.csproj
 
-      - name: Build Project
+      - name: Build Project (Release)
         shell: cmd
         run: |
-          msbuild .\Click2Key\Click2Key.csproj ^
+          msbuild Click2Key.csproj ^
             /p:Configuration=Release ^
             /p:Platform="Any CPU"
 
-      - name: Create Release Staging Folder
+      - name: Prepare staging folder
         shell: powershell
         run: |
           Remove-Item -Recurse -Force release-staging -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path release-staging
-          Copy-Item -Path ".\Click2Key\bin\Release\*" -Destination ".\release-staging\" -Recurse -Force
+          # If your build output goes to bin\Release directly, use:
+          Copy-Item -Path ".\bin\Release\*" -Destination ".\release-staging\" -Recurse -Force
+          # If the output is in a subfolder like Click2Key\bin\Release, use:
+          # Copy-Item -Path ".\Click2Key\bin\Release\*" -Destination ".\release-staging\" -Recurse -Force
 
-      - name: Create ZIP Archive
+      - name: Install Inno Setup (portable)
         shell: powershell
         run: |
-          Compress-Archive -Path ".\release-staging\*" -DestinationPath "Click2Key.zip" -CompressionLevel Optimal
+          $url = "https://files.jrsoftware.org/is/6/innosetup-6.4.0.exe"
+          $installer = "innosetup.exe"
+          Invoke-WebRequest -Uri $url -OutFile $installer
+          Start-Process -FilePath $installer -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=C:\inno" -Wait
+          Write-Host "Inno Setup installed to C:\inno"
 
-      - name: Upload Build Artifact
+      - name: Compile Inno Setup installer
+        shell: cmd
+        run: |
+          "C:\inno\ISCC.exe" setup.iss
+
+      - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Click2Key-Release
-          path: Click2Key.zip
+          name: Click2Key-Setup
+          path: Click2Key-Setup.exe
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -53,6 +66,6 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: Click2Key v1.0.${{ github.run_number }}
           generate_release_notes: true
-          files: Click2Key.zip
+          files: Click2Key-Setup.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
