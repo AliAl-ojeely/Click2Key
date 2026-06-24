@@ -19,10 +19,11 @@ jobs:
       - name: Setup NuGet
         uses: nuget/setup-nuget@v2
 
-      # Try to restore packages – adjust .csproj path if needed
+      # Restore packages – now targeting the root .csproj
       - name: Restore NuGet Packages
         run: nuget restore Click2Key.csproj
 
+      # Build the project in Release mode
       - name: Build Project (Release)
         shell: cmd
         run: |
@@ -30,17 +31,17 @@ jobs:
             /p:Configuration=Release ^
             /p:Platform="Any CPU"
 
+      # Gather all build outputs into a staging folder
       - name: Prepare staging folder
         shell: powershell
         run: |
           Remove-Item -Recurse -Force release-staging -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path release-staging
-          # If your build output goes to bin\Release directly, use:
+          # With a root project, output is under .\bin\Release
           Copy-Item -Path ".\bin\Release\*" -Destination ".\release-staging\" -Recurse -Force
-          # If the output is in a subfolder like Click2Key\bin\Release, use:
-          # Copy-Item -Path ".\Click2Key\bin\Release\*" -Destination ".\release-staging\" -Recurse -Force
 
-      - name: Install Inno Setup (portable)
+      # Install Inno Setup
+      - name: Install Inno Setup
         shell: powershell
         run: |
           $url = "https://files.jrsoftware.org/is/6/innosetup-6.4.0.exe"
@@ -49,17 +50,20 @@ jobs:
           Start-Process -FilePath $installer -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=C:\inno" -Wait
           Write-Host "Inno Setup installed to C:\inno"
 
+      # Compile the setup script
       - name: Compile Inno Setup installer
         shell: cmd
         run: |
           "C:\inno\ISCC.exe" setup.iss
 
+      # Upload the installer as an artifact (optional but useful for debugging)
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Click2Key-Setup
           path: Click2Key-Setup.exe
 
+      # Create a GitHub Release and attach the installer
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
