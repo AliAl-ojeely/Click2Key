@@ -37,6 +37,7 @@
             this.airSeparator2 = new ReaLTaiizor.Controls.AirSeparator();
             this.airSeparator3 = new ReaLTaiizor.Controls.AirSeparator();
             this.lnklblVersion = new System.Windows.Forms.LinkLabel();
+            this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -95,7 +96,6 @@
             // pictureBox1
             // 
             this.pictureBox1.BackColor = System.Drawing.Color.Transparent;
-            this.pictureBox1.Image = global::Click2Key.Properties.Resources.My_Face_cropped;
             this.pictureBox1.Location = new System.Drawing.Point(34, 34);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(188, 198);
@@ -164,11 +164,22 @@
             this.lnklblVersion.Text = "Version: 1.0";
             this.lnklblVersion.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
+            // elementHost1
+            // 
+            this.elementHost1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.elementHost1.Location = new System.Drawing.Point(0, 0);
+            this.elementHost1.Name = "elementHost1";
+            this.elementHost1.Size = new System.Drawing.Size(421, 532);
+            this.elementHost1.TabIndex = 12;
+            this.elementHost1.Text = "elementHost1";
+            this.elementHost1.Child = null;
+            // 
             // frmAbout
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(591, 281);
+            this.ClientSize = new System.Drawing.Size(421, 532);
+            this.Controls.Add(this.elementHost1);
             this.Controls.Add(this.lnklblVersion);
             this.Controls.Add(this.airSeparator3);
             this.Controls.Add(this.airSeparator2);
@@ -185,7 +196,6 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Developer Info";
-            this.Load += new System.EventHandler(this.frmAbout_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
 
@@ -202,5 +212,6 @@
         private ReaLTaiizor.Controls.AirSeparator airSeparator2;
         private ReaLTaiizor.Controls.AirSeparator airSeparator3;
         private System.Windows.Forms.LinkLabel lnklblVersion;
+        private System.Windows.Forms.Integration.ElementHost elementHost1;
     }
 }

@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Click2Key")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Connection Between you and Keyboard")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("ReviOS 10 25.10")]
+[assembly: AssemblyCompany("Ali Al-ojeely (Mr.Ghost)")]
 [assembly: AssemblyProduct("Click2Key")]
-[assembly: AssemblyCopyright("Copyright © ReviOS 10 25.10 2026")]
+[assembly: AssemblyCopyright("Copyright © (Mr.Ghost) 1.2")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -29,5 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyFileVersion("1.2.0.0")]

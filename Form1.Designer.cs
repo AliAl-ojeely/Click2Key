@@ -70,6 +70,8 @@
             this.label2 = new System.Windows.Forms.Label();
             this.lablWinE = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
+            this.wpfShortcutCanvas1 = new Click2Key.WpfShortcutCanvas();
             this.panel3.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel4.SuspendLayout();
@@ -291,9 +293,9 @@
             // 
             this.flpShortcuts.AutoScroll = true;
             this.flpShortcuts.BackColor = System.Drawing.Color.Transparent;
-            this.flpShortcuts.Location = new System.Drawing.Point(-2, 136);
+            this.flpShortcuts.Location = new System.Drawing.Point(936, 558);
             this.flpShortcuts.Name = "flpShortcuts";
-            this.flpShortcuts.Size = new System.Drawing.Size(982, 482);
+            this.flpShortcuts.Size = new System.Drawing.Size(376, 232);
             this.flpShortcuts.TabIndex = 29;
             // 
             // airSeparator4
@@ -732,11 +734,22 @@
             this.panel1.Tag = "Win";
             this.panel1.Visible = false;
             // 
+            // elementHost1
+            // 
+            this.elementHost1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.elementHost1.Location = new System.Drawing.Point(0, 0);
+            this.elementHost1.Name = "elementHost1";
+            this.elementHost1.Size = new System.Drawing.Size(1278, 721);
+            this.elementHost1.TabIndex = 0;
+            this.elementHost1.Text = "elementHost1";
+            this.elementHost1.Child = this.wpfShortcutCanvas1;
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(981, 614);
+            this.ClientSize = new System.Drawing.Size(1278, 721);
+            this.Controls.Add(this.elementHost1);
             this.Controls.Add(this.airSeparator5);
             this.Controls.Add(this.airSeparator4);
             this.Controls.Add(this.btnSystemTray);
@@ -761,7 +774,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "frmMain";
-            this.Text = "Click2Key v1.1";
+            this.Text = "Click2Key v1.2";
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.panel3.ResumeLayout(false);
             this.panel3.PerformLayout();
@@ -819,6 +832,8 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label lablWinE;
         private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Integration.ElementHost elementHost1;
+        private WpfShortcutCanvas wpfShortcutCanvas1;
     }
 }
 

@@ -31,9 +31,15 @@
 
 ## 📸 Screenshots
 
-### Main Application Window
+### Main Application Window (Windows Form APP)
 
 ![Main application window](assets/main-app-photo.png)
+
+---
+
+### Main Application Window (WPF)
+
+![Main application window](assets/WPF-Main-App-Photo.png)
 
 ---
 

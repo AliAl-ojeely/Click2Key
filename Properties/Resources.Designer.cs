@@ -61,12 +61,12 @@ namespace Click2Key.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        ///   Looks up a localized resource of type System.Resources.ResXFileRef.
         /// </summary>
-        internal static System.Drawing.Bitmap My_Face_cropped {
+        internal static System.Resources.ResXFileRef My_Face_cropped {
             get {
                 object obj = ResourceManager.GetObject("My Face_cropped", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
+                return ((System.Resources.ResXFileRef)(obj));
             }
         }
     }
