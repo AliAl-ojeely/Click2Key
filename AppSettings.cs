@@ -12,7 +12,10 @@ namespace Click2Key
             "Click2Key",
             "windowSettings.txt");
 
-        public static void SaveWinodwState(Form form)
+        /// <summary>
+        /// Saves the current form size, location, and window state.
+        /// </summary>
+        public static void SaveWindowState(Form form)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
             var lines = new string[]
@@ -21,67 +24,68 @@ namespace Click2Key
                 form.Size.Width.ToString(),
                 form.Size.Height.ToString(),
                 form.Location.X.ToString(),
-                form.Location.Y.ToString(),
+                form.Location.Y.ToString()
             };
-
             File.WriteAllLines(settingsPath, lines);
         }
 
-        public static void LoadWindowState(Form form)
+        /// <summary>
+        /// Loads the saved window state. Returns true if successful.
+        /// </summary>
+        public static bool LoadWindowState(Form form)
         {
-            if (!File.Exists(settingsPath)) return;
+            if (!File.Exists(settingsPath))
+                return false;
 
             try
             {
                 var lines = File.ReadAllLines(settingsPath);
-                if (lines.Length < 5) return;
+                if (lines.Length < 5) return false;
 
+                // Parse state
                 FormWindowState state;
-                if (Enum.TryParse(lines[0], out state))
+                if (!Enum.TryParse(lines[0], out state))
+                    return false;
+
+                form.WindowState = state;
+
+                // If normal, set size and location
+                if (state == FormWindowState.Normal)
                 {
-                    form.WindowState = state;
-                    // If saved as maximized, we don’t need to set size/location
+                    int w = int.Parse(lines[1]);
+                    int h = int.Parse(lines[2]);
+                    int x = int.Parse(lines[3]);
+                    int y = int.Parse(lines[4]);
 
-                    if (state == FormWindowState.Normal)
+                    // Make sure it's within current screen bounds
+                    Rectangle newRect = new Rectangle(x, y, w, h);
+                    if (Screen.FromControl(form).WorkingArea.IntersectsWith(newRect))
                     {
-                        int w = int.Parse(lines[1]);
-                        int h = int.Parse(lines[2]);
-                        int x = int.Parse(lines[3]);
-                        int y = int.Parse(lines[4]);
-
-
-                        // Ensure the window is within the current screen bounds
-                        if (Screen.FromControl(form).WorkingArea.Contains(new Rectangle(x, y, w, h)))
-                        {
-                            form.Size = new Size(w, h);
-                            form.Location = new Point(x, y);
-                        }
-
-
-                        else
-                        {
-                            // Fallback to adaptive default
-                            SetDefaultSize(form);
-                        }
+                        form.Size = new Size(w, h);
+                        form.Location = new Point(x, y);
+                    }
+                    else
+                    {
+                        // Fallback: center 80% default
+                        ApplyDefaultSize(form);
                     }
                 }
+
+                return true;
             }
-            catch { 
-                // Ignore corrputed settings
+            catch
+            {
+                return false;
             }
         }
 
-        private static void SetDefaultSize(Form form)
+        private static void ApplyDefaultSize(Form form)
         {
             Screen screen = Screen.FromControl(form);
             Rectangle area = screen.WorkingArea;
-
             form.ClientSize = new Size((int)(area.Width * 0.8), (int)(area.Height * 0.8));
-
-            form.Location = new Point
-                ((area.Width - form.Width) / 2,
-                (area.Height - form.Height) / 2);
+            form.Location = new Point((area.Width - form.Width) / 2,
+                                      (area.Height - form.Height) / 2);
         }
     }
 }
-

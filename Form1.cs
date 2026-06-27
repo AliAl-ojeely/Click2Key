@@ -1,5 +1,6 @@
 ﻿using ReaLTaiizor.Forms;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
@@ -10,9 +11,59 @@ namespace Click2Key
 {
     public partial class frmMain : CrownForm
     {
+        // ==========================================
+        // WIN32 IMPORTS (SendInput for reliable simulation)
+        // ==========================================
         [DllImport("user32.dll")]
-        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+        private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool LockWorkStation();
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct INPUT
+        {
+            public uint type;
+            public MOUSEKEYBDHARDWAREUNION mkhi;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct MOUSEKEYBDHARDWAREUNION
+        {
+            [FieldOffset(0)] public KEYBDINPUT ki;
+            [FieldOffset(0)] public MOUSEINPUT mi;
+            [FieldOffset(0)] public HARDWAREINPUT hi;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct KEYBDINPUT
+        {
+            public ushort wVk;
+            public ushort wScan;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct MOUSEINPUT { /* not used */ }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct HARDWAREINPUT { /* not used */ }
+
+        private const uint INPUT_KEYBOARD = 1;
+        private const uint KEYEVENTF_KEYDOWN = 0x0000;
+        private const uint KEYEVENTF_KEYUP = 0x0002;
+        private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
+        private const uint KEYEVENTF_SCANCODE = 0x0008;
+
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+        private const uint MAPVK_VK_TO_VSC = 0;
+
+        // ==========================================
+        // FIELDS
+        // ==========================================
         private bool isLightTheme = false;
         private bool isArabic = false;
 
@@ -20,9 +71,6 @@ namespace Click2Key
         private ContextMenuStrip trayContextMenu;
         private ToolStripMenuItem miOpen, miExit, miToggleTray;
 
-        private const uint KEYEVENTF_KEYUP = 0x0002;
-
-        // Optional cached gradient background for the WinForms shell
         private Bitmap cachedGradient;
         private Size lastClientSize;
         private bool lastRenderedTheme;
@@ -30,14 +78,36 @@ namespace Click2Key
         private const string AppEventName = "Click2Key_RestoreEvent";
         private EventWaitHandle restoreEvent;
         private System.Windows.Forms.Timer eventCheckTimer;
-
-        // True when the user selected "Exit" from the tray menu → allow actual closing
         private bool _exitRequested = false;
 
         public frmMain()
         {
             InitializeComponent();
-            this.StartPosition = FormStartPosition.CenterScreen;   // fallback centering
+
+            // ==========================================
+            // WINDOW PLACEMENT LOGIC
+            // ==========================================
+            // Load state BEFORE the form handle is drawn to prevent the top-left flicker
+            bool loaded = AppSettings.LoadWindowState(this);
+
+            if (!loaded || this.ClientSize.Width == 0)
+            {
+                // First run (or missing file): Natively center the form
+                this.StartPosition = FormStartPosition.CenterScreen;
+
+                // Calculate 80% of the primary screen
+                Rectangle area = Screen.PrimaryScreen.WorkingArea;
+                this.ClientSize = new Size((int)(area.Width * 0.8), (int)(area.Height * 0.8));
+            }
+            else
+            {
+                // Saved state found: Tell Windows to use the exact saved coordinates
+                this.StartPosition = FormStartPosition.Manual;
+            }
+
+            // Save position/size when the user moves or resizes the window
+            this.ResizeEnd += (s, e) => AppSettings.SaveWindowState(this);
+            this.Move += (s, e) => AppSettings.SaveWindowState(this);
 
             this.DoubleBuffered = true;
             this.ResizeRedraw = true;
@@ -54,7 +124,7 @@ namespace Click2Key
             };
             appTrayIcon.MouseDoubleClick += notifyIcon1_MouseDoubleClick;
 
-            // Build tray context menu
+            // Tray context menu
             trayContextMenu = new ContextMenuStrip();
             miOpen = new ToolStripMenuItem("Open");
             miOpen.Click += (s, args) => RestoreFromTray();
@@ -84,21 +154,17 @@ namespace Click2Key
             trayContextMenu.Items.Add(miExit);
             appTrayIcon.ContextMenuStrip = trayContextMenu;
 
-            // Set up the restore‑event listener (another instance asks us to restore)
+            // Single‑instance restore listener
             restoreEvent = new EventWaitHandle(false, EventResetMode.AutoReset, AppEventName);
             eventCheckTimer = new System.Windows.Forms.Timer { Interval = 100 };
             eventCheckTimer.Tick += (s, e) =>
             {
                 if (restoreEvent.WaitOne(0))
-                {
                     this.Invoke((Action)(() => RestoreFromTray()));
-                }
             };
             eventCheckTimer.Start();
 
-            // ------------------------------------------------------------
-            // 🔥 WIRE WPF EVENTS DIRECTLY HERE – BEFORE FORM IS SHOWN
-            // ------------------------------------------------------------
+            // Wire WPF events
             wpfShortcutCanvas1.OnExecuteRequested += WpfCanvas_OnExecuteRequested;
             wpfShortcutCanvas1.OnLangToggleRequested += (s, args) => ToggleLanguage();
             wpfShortcutCanvas1.OnThemeToggleRequested += (s, args) => ToggleTheme();
@@ -107,9 +173,9 @@ namespace Click2Key
             wpfShortcutCanvas1.OnDevInfoRequested += (s, args) => ShowDeveloperInfo();
         }
 
-        // ------------------------------------------------------------
-        // System tray helpers
-        // ------------------------------------------------------------
+        // ==========================================
+        // SYSTEM TRAY HELPERS
+        // ==========================================
         private void UpdateTrayToggleText()
         {
             if (isArabic)
@@ -118,34 +184,62 @@ namespace Click2Key
                 miToggleTray.Text = appTrayIcon.Visible ? "Turn Off System Tray" : "Turn On System Tray";
         }
 
-        // ------------------------------------------------------------
-        // Keyboard simulation
-        // ------------------------------------------------------------
+        // ==========================================
+        // KEYBOARD SIMULATION (SendInput – reliable)
+        // ==========================================
         private void SimulateKeystroke(byte[] modifiers, byte mainKey)
         {
+            var inputs = new List<INPUT>();
+
             if (modifiers != null)
                 foreach (byte mod in modifiers)
-                    keybd_event(mod, 0, 0, 0);
+                    inputs.Add(CreateKeyInput(mod, true));
 
-            keybd_event(mainKey, 0, 0, 0);
-            keybd_event(mainKey, 0, KEYEVENTF_KEYUP, 0);
+            inputs.Add(CreateKeyInput(mainKey, true));
+            inputs.Add(CreateKeyInput(mainKey, false));
 
             if (modifiers != null)
                 for (int i = modifiers.Length - 1; i >= 0; i--)
-                    keybd_event(modifiers[i], 0, KEYEVENTF_KEYUP, 0);
+                    inputs.Add(CreateKeyInput(modifiers[i], false));
+
+            SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf(typeof(INPUT)));
         }
 
-        // ------------------------------------------------------------
-        // Form Load – only data loading (events already wired in constructor)
-        // ------------------------------------------------------------
+        private INPUT CreateKeyInput(byte vk, bool isKeyDown)
+        {
+            uint flags = isKeyDown ? KEYEVENTF_KEYDOWN : KEYEVENTF_KEYUP;
+            bool isExtended = (vk == 0x5B || vk == 0x5C || vk == 0x12);
+
+            if (isExtended)
+                flags |= KEYEVENTF_EXTENDEDKEY | KEYEVENTF_SCANCODE;
+
+            uint scanCode = MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+            if (isExtended)
+                scanCode |= 0xE000;
+
+            return new INPUT
+            {
+                type = INPUT_KEYBOARD,
+                mkhi = new MOUSEKEYBDHARDWAREUNION
+                {
+                    ki = new KEYBDINPUT
+                    {
+                        wVk = vk,
+                        wScan = (ushort)scanCode,
+                        dwFlags = flags,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+        }
+
+        // ==========================================
+        // FORM LOAD – restore saved size/position
+        // ==========================================
         private void frmMain_Load(object sender, EventArgs e)
         {
-            // Restore window state (saved position & size)
-            AppSettings.LoadWindowState(this);
-            if (this.WindowState == FormWindowState.Normal && this.ClientSize.Width == 0)
-                AppSettings.LoadWindowState(this);   // force default if settings missing
-
-            var wpfCanvas = wpfShortcutCanvas1;       // direct reference, no cast needed
+            var wpfCanvas = wpfShortcutCanvas1;
             if (wpfCanvas == null) return;
 
             // Populate shortcuts
@@ -172,19 +266,24 @@ namespace Click2Key
             wpfCanvas.SetLanguage(isArabic);
         }
 
-        // ------------------------------------------------------------
-        // WPF event handlers
-        // ------------------------------------------------------------
+        // ==========================================
+        // WPF EVENT HANDLERS
+        // ==========================================
         private async void WpfCanvas_OnExecuteRequested(object sender, ShortcutNode node)
         {
-            var wpfCanvas = wpfShortcutCanvas1;
-            if (wpfCanvas == null) return;
+            if(node.LogKey == "Shortcut_Win_L")
+            {
+                LockWorkStation();
+            }
+            else
+            {
+                SimulateKeystroke(node.Modifiers, node.MainKey);
+            }
 
-            SimulateKeystroke(node.Modifiers, node.MainKey);
             ClickLogger.LogClick(node.LogKey);
 
             node.ExecutionCount = ClickLogger.GetCount(node.LogKey);
-            wpfCanvas.ShortcutList.Items.Refresh();
+            wpfShortcutCanvas1?.ShortcutList.Items.Refresh();
         }
 
         private void ToggleLanguage()
@@ -221,9 +320,9 @@ namespace Click2Key
             aboutForm.ShowDialog();
         }
 
-        // ------------------------------------------------------------
-        // Tray restore & close
-        // ------------------------------------------------------------
+        // ==========================================
+        // TRAY RESTORE & CLOSE
+        // ==========================================
         private void RestoreFromTray()
         {
             this.Show();
@@ -241,26 +340,28 @@ namespace Click2Key
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (_exitRequested)
+            // Save final window position & size before shutting down
+            AppSettings.SaveWindowState(this);
+
+            // Clean up background listeners
+            eventCheckTimer?.Stop();
+            restoreEvent?.Dispose();
+
+            // Hide and dispose of the tray icon so it doesn't leave a "ghost" icon 
+            // in the Windows taskbar after the app closes
+            if (appTrayIcon != null)
             {
-                // Real exit – clean up and allow closing
-                eventCheckTimer?.Stop();
-                restoreEvent?.Dispose();
-                base.OnFormClosing(e);
-                return;
+                appTrayIcon.Visible = false;
+                appTrayIcon.Dispose();
             }
 
-            // Normal close (X button, Alt+F4) → hide to tray
-            e.Cancel = true;
-            this.Hide();
-            this.ShowInTaskbar = false;
-            appTrayIcon.Visible = true;
-            UpdateTrayToggleText();
+            // Allow the form to close naturally
+            base.OnFormClosing(e);
         }
 
-        // ------------------------------------------------------------
-        // Optional gradient background
-        // ------------------------------------------------------------
+        // ==========================================
+        // GRADIENT BACKGROUND (unchanged)
+        // ==========================================
         private void ApplyGradientBackground()
         {
             if (this.ClientRectangle.Width == 0 || this.ClientRectangle.Height == 0) return;

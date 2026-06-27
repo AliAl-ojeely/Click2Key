@@ -38,9 +38,8 @@ namespace Click2Key
             this.ClientSize = new System.Drawing.Size(1278, 721);
             this.Controls.Add(this.elementHost1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
             this.Name = "frmMain";
-            this.Text = "Click2Key v1.5";
+            this.Text = "Click2Key v1.7";
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.ResumeLayout(false);
 
