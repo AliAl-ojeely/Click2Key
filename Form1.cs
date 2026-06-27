@@ -14,13 +14,22 @@ namespace Click2Key
         // ==========================================
         // WIN32 IMPORTS (SendInput for reliable simulation)
         // ==========================================
-        [DllImport("user32.dll")]
-        private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+        // ==========================================
+        // WIN32 IMPORTS (keybd_event for reliable simulation)
+        // ==========================================
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool LockWorkStation();
 
-        [StructLayout(LayoutKind.Sequential)]
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+        private const uint MAPVK_VK_TO_VSC = 0;
+
+        private const uint KEYEVENTF_KEYDOWN = 0x0000;
+        private const uint KEYEVENTF_KEYUP = 0x0002;
+        private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
         struct INPUT
         {
             public uint type;
@@ -51,15 +60,6 @@ namespace Click2Key
         [StructLayout(LayoutKind.Sequential)]
         struct HARDWAREINPUT { /* not used */ }
 
-        private const uint INPUT_KEYBOARD = 1;
-        private const uint KEYEVENTF_KEYDOWN = 0x0000;
-        private const uint KEYEVENTF_KEYUP = 0x0002;
-        private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
-        private const uint KEYEVENTF_SCANCODE = 0x0008;
-
-        [DllImport("user32.dll")]
-        private static extern uint MapVirtualKey(uint uCode, uint uMapType);
-        private const uint MAPVK_VK_TO_VSC = 0;
 
         // ==========================================
         // FIELDS
@@ -80,9 +80,23 @@ namespace Click2Key
         private System.Windows.Forms.Timer eventCheckTimer;
         private bool _exitRequested = false;
 
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                // WS_EX_NOACTIVATE: Prevents the form from taking focus when clicked
+                const int WS_EX_NOACTIVATE = 0x08000000;
+                cp.ExStyle |= WS_EX_NOACTIVATE;
+                return cp;
+            }
+        }
+
         public frmMain()
         {
             InitializeComponent();
+
+            
 
             // ==========================================
             // WINDOW PLACEMENT LOGIC
@@ -187,51 +201,53 @@ namespace Click2Key
         // ==========================================
         // KEYBOARD SIMULATION (SendInput – reliable)
         // ==========================================
+        // ==========================================
+        // KEYBOARD SIMULATION (keybd_event)
+        // ==========================================
         private void SimulateKeystroke(byte[] modifiers, byte mainKey)
         {
-            var inputs = new List<INPUT>();
-
+            // 1. Press Modifiers (Ctrl, Alt, Win, Shift)
             if (modifiers != null)
+            {
                 foreach (byte mod in modifiers)
-                    inputs.Add(CreateKeyInput(mod, true));
+                {
+                    keybd_event(mod, (byte)MapVirtualKey(mod, MAPVK_VK_TO_VSC), GetKeyFlags(mod, true), UIntPtr.Zero);
+                }
+            }
 
-            inputs.Add(CreateKeyInput(mainKey, true));
-            inputs.Add(CreateKeyInput(mainKey, false));
+            // 2. Press Main Key
+            keybd_event(mainKey, (byte)MapVirtualKey(mainKey, MAPVK_VK_TO_VSC), GetKeyFlags(mainKey, true), UIntPtr.Zero);
 
+            // 3. Release Main Key
+            keybd_event(mainKey, (byte)MapVirtualKey(mainKey, MAPVK_VK_TO_VSC), GetKeyFlags(mainKey, false), UIntPtr.Zero);
+
+            // 4. Release Modifiers (In reverse order)
             if (modifiers != null)
+            {
                 for (int i = modifiers.Length - 1; i >= 0; i--)
-                    inputs.Add(CreateKeyInput(modifiers[i], false));
-
-            SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf(typeof(INPUT)));
+                {
+                    byte mod = modifiers[i];
+                    keybd_event(mod, (byte)MapVirtualKey(mod, MAPVK_VK_TO_VSC), GetKeyFlags(mod, false), UIntPtr.Zero);
+                }
+            }
         }
 
-        private INPUT CreateKeyInput(byte vk, bool isKeyDown)
+        private uint GetKeyFlags(byte vk, bool isKeyDown)
         {
             uint flags = isKeyDown ? KEYEVENTF_KEYDOWN : KEYEVENTF_KEYUP;
-            bool isExtended = (vk == 0x5B || vk == 0x5C || vk == 0x12);
+
+            // Standard extended keys (Win keys, Alt, Ctrl, Arrows, Home/End, etc.)
+            bool isExtended = (vk == 0x5B || vk == 0x5C || vk == 0x12 || vk == 0x11 ||
+                               vk == 0x25 || vk == 0x26 || vk == 0x27 || vk == 0x28 ||
+                               vk == 0x21 || vk == 0x22 || vk == 0x23 || vk == 0x24 ||
+                               vk == 0x2D || vk == 0x2E);
 
             if (isExtended)
-                flags |= KEYEVENTF_EXTENDEDKEY | KEYEVENTF_SCANCODE;
-
-            uint scanCode = MapVirtualKey(vk, MAPVK_VK_TO_VSC);
-            if (isExtended)
-                scanCode |= 0xE000;
-
-            return new INPUT
             {
-                type = INPUT_KEYBOARD,
-                mkhi = new MOUSEKEYBDHARDWAREUNION
-                {
-                    ki = new KEYBDINPUT
-                    {
-                        wVk = vk,
-                        wScan = (ushort)scanCode,
-                        dwFlags = flags,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero
-                    }
-                }
-            };
+                flags |= KEYEVENTF_EXTENDEDKEY;
+            }
+
+            return flags;
         }
 
         // ==========================================
@@ -271,7 +287,10 @@ namespace Click2Key
         // ==========================================
         private async void WpfCanvas_OnExecuteRequested(object sender, ShortcutNode node)
         {
-            if(node.LogKey == "Shortcut_Win_L")
+            // Add a 150ms buffer to allow the physical mouse click to release
+            await System.Threading.Tasks.Task.Delay(150);
+
+            if (node.LogKey == "Shortcut_Win_L")
             {
                 LockWorkStation();
             }
@@ -284,6 +303,8 @@ namespace Click2Key
 
             node.ExecutionCount = ClickLogger.GetCount(node.LogKey);
             wpfShortcutCanvas1?.ShortcutList.Items.Refresh();
+
+            this.SendToBack();
         }
 
         private void ToggleLanguage()
