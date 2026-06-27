@@ -59,6 +59,7 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppSettings.cs" />
     <Compile Include="ClickLogger.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>

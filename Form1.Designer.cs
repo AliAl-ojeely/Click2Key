@@ -37,8 +37,10 @@
             this.Controls.Add(this.elementHost1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
+            this.MinimizeBox = true;
             this.Name = "frmMain";
             this.Text = "Click2Key v1.2";
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.ResumeLayout(false);
         }

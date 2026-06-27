@@ -113,8 +113,14 @@ namespace Click2Key
         // ------------------------------------------------------------
         private void frmMain_Load(object sender, EventArgs e)
         {
+            // try to restore saved window state, otherwise default 80%
+
+            AppSettings.LoadWindowState(this);
+            if(this.WindowState == FormWindowState.Normal && this.ClientSize.Width == 0)
+                AppSettings.LoadWindowState(this); // force default if settings missing
+
             var wpfCanvas = elementHost1.Child as WpfShortcutCanvas;
-            if (wpfCanvas == null) return;
+                if (wpfCanvas == null) return;
 
             // Wire WPF events
             wpfCanvas.OnExecuteRequested += WpfCanvas_OnExecuteRequested;
@@ -216,6 +222,10 @@ namespace Click2Key
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            // Save window state if the user is closing normally
+            if (e.CloseReason == CloseReason.UserClosing)
+                AppSettings.SaveWinodwState(this);
+
             base.OnFormClosing(e); // X closes the app
         }
 
