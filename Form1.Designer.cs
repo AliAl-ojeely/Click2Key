@@ -1,4 +1,6 @@
-﻿namespace Click2Key
+﻿using System.Windows.Forms;
+
+namespace Click2Key
 {
     partial class frmMain
     {
@@ -37,12 +39,11 @@
             this.Controls.Add(this.elementHost1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
-            this.MinimizeBox = true;
             this.Name = "frmMain";
-            this.Text = "Click2Key v1.2";
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
+            this.Text = "Click2Key v1.5";
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.ResumeLayout(false);
+
         }
 
         private System.Windows.Forms.Integration.ElementHost elementHost1;

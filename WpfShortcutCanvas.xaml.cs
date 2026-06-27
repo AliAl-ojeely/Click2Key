@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,8 +12,20 @@ namespace Click2Key
 {
     public partial class WpfShortcutCanvas : UserControl
     {
+        // ==========================================
+        // DATA & COLLECTIONS
+        // ==========================================
         public ObservableCollection<ShortcutNode> Shortcuts { get; set; } = new ObservableCollection<ShortcutNode>();
+        private ObservableCollection<ShortcutNode> favoritesOrdered = new ObservableCollection<ShortcutNode>();
 
+        private List<string> favoriteKeys = new List<string>();
+        private bool showFavoritesOnly = false;
+
+        private bool isArabic;
+
+        // ==========================================
+        // EVENTS
+        // ==========================================
         public event EventHandler<ShortcutNode> OnExecuteRequested;
         public event EventHandler OnLangToggleRequested;
         public event EventHandler OnThemeToggleRequested;
@@ -18,18 +33,24 @@ namespace Click2Key
         public event EventHandler OnSystemTrayRequested;
         public event EventHandler OnDevInfoRequested;
 
+        // ==========================================
+        // CONSTRUCTOR
+        // ==========================================
         public WpfShortcutCanvas()
         {
             InitializeComponent();
-            ShortcutList.ItemsSource = Shortcuts;
+
+            // Load the ordered list of favorite keys
+            favoriteKeys = FavoriteManager.LoadFavorites();
+            ShortcutList.ItemsSource = Shortcuts;   // start with "All" view
         }
 
         // ==========================================
-        // DYNAMIC UI UPDATES
+        // LANGUAGE & THEME (unchanged)
         // ==========================================
         public void SetLanguage(bool isArabic)
         {
-            // Header texts
+            this.isArabic = isArabic;
             txtMainTitle.Text = isArabic ? "ارتباط بينك و بين لوحة المفاتيح" : "Connection Between You and Keyboard";
             txtMainTitle.FlowDirection = isArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
 
@@ -43,7 +64,7 @@ namespace Click2Key
             foreach (var node in Shortcuts)
                 node.ApplyLanguage(isArabic);
 
-            ShortcutList.Items.Refresh();
+            UpdateFavoritesButton();
         }
 
         public void SetTheme(bool isLight)
@@ -76,10 +97,98 @@ namespace Click2Key
         }
 
         // ==========================================
+        // FAVORITES SYSTEM – ordered, no lag
+        // ==========================================
+
+        // Called after the shortcuts list is populated
+        public void ApplyFavorites()
+        {
+            // Build a lookup for quick node access
+            var lookup = Shortcuts.ToDictionary(n => n.LogKey);
+
+            // Mark favorites and build the ordered list
+            favoritesOrdered.Clear();
+            foreach (var key in favoriteKeys)
+            {
+                if (lookup.TryGetValue(key, out var node))
+                {
+                    node.IsFavorite = true;
+                    favoritesOrdered.Add(node);   // preserves starring order
+                }
+            }
+
+            // The rest are not favorites
+            foreach (var node in Shortcuts)
+                if (!favoriteKeys.Contains(node.LogKey))
+                    node.IsFavorite = false;
+
+            // Initial view is "All"
+            ShortcutList.ItemsSource = Shortcuts;
+            UpdateFavoritesButton();
+        }
+
+        // Star/unstar a shortcut
+        private void ToggleFavorite_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is ShortcutNode node)
+            {
+                node.IsFavorite = !node.IsFavorite;
+                string key = node.LogKey;
+
+                if (node.IsFavorite)
+                {
+                    // Add to the end of the starred order
+                    favoriteKeys.Add(key);
+                    favoritesOrdered.Add(node);
+                }
+                else
+                {
+                    favoriteKeys.Remove(key);
+                    favoritesOrdered.Remove(node);
+                }
+
+                // Save the new order
+                Task.Run(() => FavoriteManager.SaveFavorites(favoriteKeys));
+
+                // If currently showing only favorites, we need to rebind to reflect the change
+                if (showFavoritesOnly)
+                    ShortcutList.ItemsSource = new ObservableCollection<ShortcutNode>(favoritesOrdered);
+                // Otherwise we don't need to change the ItemsSource; the star icon updates via binding.
+            }
+        }
+
+        // Toggle between "All" and "Favorites"
+        private void BtnToggleFavorites_Click(object sender, RoutedEventArgs e)
+        {
+            showFavoritesOnly = !showFavoritesOnly;
+
+            if (showFavoritesOnly)
+                ShortcutList.ItemsSource = new ObservableCollection<ShortcutNode>(favoritesOrdered);
+            else
+                ShortcutList.ItemsSource = Shortcuts;
+
+            UpdateFavoritesButton();
+        }
+
+        private void UpdateFavoritesButton()
+        {
+            if (showFavoritesOnly)
+            {
+                btnToggleFavorites.Content = "★";
+                btnToggleFavorites.ToolTip = isArabic ? "إظهار الكل" : "Show All";
+            }
+            else
+            {
+                btnToggleFavorites.Content = "☆";
+                btnToggleFavorites.ToolTip = isArabic ? "إظهار المفضلة فقط" : "Show Favorites Only";
+            }
+        }
+
+        // ==========================================
         // EVENTS
         // ==========================================
         private async void ExecuteButton_Click(object sender, RoutedEventArgs e)
-        {
+            {
             if (!(sender is Button btn) || !(btn.DataContext is ShortcutNode node))
                 return;
 
@@ -118,6 +227,7 @@ namespace Click2Key
             return 0;
         }
 
+        // Event forwarders
         private void BtnLang_Click(object sender, RoutedEventArgs e) => OnLangToggleRequested?.Invoke(this, EventArgs.Empty);
         private void BtnTheme_Click(object sender, RoutedEventArgs e) => OnThemeToggleRequested?.Invoke(this, EventArgs.Empty);
         private void BtnLogFile_Click(object sender, RoutedEventArgs e) => OnLogFileRequested?.Invoke(this, EventArgs.Empty);
@@ -128,7 +238,7 @@ namespace Click2Key
     // ==========================================
     // DATA MODEL
     // ==========================================
-    public class ShortcutNode
+    public class ShortcutNode : INotifyPropertyChanged
     {
         public string LogKey { get; set; }
         public byte MainKey { get; set; }
@@ -139,7 +249,26 @@ namespace Click2Key
         public string InfoEn { get; set; }
         public string InfoAr { get; set; }
 
-        public int ExecutionCount { get; set; }
+        private int _executionCount;
+        public int ExecutionCount
+        {
+            get => _executionCount;
+            set { _executionCount = value; OnPropertyChanged(nameof(ExecutionCount)); }
+        }
+
+        private bool _isFavorite;
+        public bool IsFavorite
+        {
+            get => _isFavorite;
+            set { _isFavorite = value; OnPropertyChanged(nameof(IsFavorite)); }
+        }
+
+        private bool _isVisible = true;
+        public bool IsVisible
+        {
+            get => _isVisible;
+            set { _isVisible = value; OnPropertyChanged(nameof(IsVisible)); }
+        }
 
         // UI‑bound properties
         public string DisplayTitle { get; private set; }
@@ -151,6 +280,15 @@ namespace Click2Key
             DisplayTitle = isArabic ? TitleAr : TitleEn;
             DisplayInfo = isArabic ? InfoAr : InfoEn;
             ExecuteButtonText = isArabic ? "تنفيذ" : "EXECUTE";
+            OnPropertyChanged(nameof(DisplayTitle));
+            OnPropertyChanged(nameof(DisplayInfo));
+            OnPropertyChanged(nameof(ExecuteButtonText));
         }
-    }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }  
 }

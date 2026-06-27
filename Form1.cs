@@ -1,9 +1,9 @@
 ﻿using ReaLTaiizor.Forms;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Click2Key
@@ -27,9 +27,17 @@ namespace Click2Key
         private Size lastClientSize;
         private bool lastRenderedTheme;
 
+        private const string AppEventName = "Click2Key_RestoreEvent";
+        private EventWaitHandle restoreEvent;
+        private System.Windows.Forms.Timer eventCheckTimer;
+
+        // True when the user selected "Exit" from the tray menu → allow actual closing
+        private bool _exitRequested = false;
+
         public frmMain()
         {
             InitializeComponent();
+            this.StartPosition = FormStartPosition.CenterScreen;   // fallback centering
 
             this.DoubleBuffered = true;
             this.ResizeRedraw = true;
@@ -49,14 +57,7 @@ namespace Click2Key
             // Build tray context menu
             trayContextMenu = new ContextMenuStrip();
             miOpen = new ToolStripMenuItem("Open");
-            miOpen.Click += (s, args) =>
-            {
-                this.Show();
-                this.WindowState = FormWindowState.Normal;
-                this.ShowInTaskbar = true;
-                appTrayIcon.Visible = false;
-                UpdateTrayToggleText();
-            };
+            miOpen.Click += (s, args) => RestoreFromTray();
 
             miToggleTray = new ToolStripMenuItem("Turn Off System Tray");
             miToggleTray.Click += (s, args) =>
@@ -71,13 +72,39 @@ namespace Click2Key
             };
 
             miExit = new ToolStripMenuItem("Exit");
-            miExit.Click += (s, args) => this.Close();
+            miExit.Click += (s, args) =>
+            {
+                _exitRequested = true;
+                this.Close();
+            };
 
             trayContextMenu.Items.Add(miOpen);
             trayContextMenu.Items.Add(miToggleTray);
             trayContextMenu.Items.Add(new ToolStripSeparator());
             trayContextMenu.Items.Add(miExit);
             appTrayIcon.ContextMenuStrip = trayContextMenu;
+
+            // Set up the restore‑event listener (another instance asks us to restore)
+            restoreEvent = new EventWaitHandle(false, EventResetMode.AutoReset, AppEventName);
+            eventCheckTimer = new System.Windows.Forms.Timer { Interval = 100 };
+            eventCheckTimer.Tick += (s, e) =>
+            {
+                if (restoreEvent.WaitOne(0))
+                {
+                    this.Invoke((Action)(() => RestoreFromTray()));
+                }
+            };
+            eventCheckTimer.Start();
+
+            // ------------------------------------------------------------
+            // 🔥 WIRE WPF EVENTS DIRECTLY HERE – BEFORE FORM IS SHOWN
+            // ------------------------------------------------------------
+            wpfShortcutCanvas1.OnExecuteRequested += WpfCanvas_OnExecuteRequested;
+            wpfShortcutCanvas1.OnLangToggleRequested += (s, args) => ToggleLanguage();
+            wpfShortcutCanvas1.OnThemeToggleRequested += (s, args) => ToggleTheme();
+            wpfShortcutCanvas1.OnLogFileRequested += (s, args) => ClickLogger.OpenLogFile();
+            wpfShortcutCanvas1.OnSystemTrayRequested += (s, args) => MinimizeToTray();
+            wpfShortcutCanvas1.OnDevInfoRequested += (s, args) => ShowDeveloperInfo();
         }
 
         // ------------------------------------------------------------
@@ -109,26 +136,17 @@ namespace Click2Key
         }
 
         // ------------------------------------------------------------
-        // Form Load – initialise WPF control
+        // Form Load – only data loading (events already wired in constructor)
         // ------------------------------------------------------------
         private void frmMain_Load(object sender, EventArgs e)
         {
-            // try to restore saved window state, otherwise default 80%
-
+            // Restore window state (saved position & size)
             AppSettings.LoadWindowState(this);
-            if(this.WindowState == FormWindowState.Normal && this.ClientSize.Width == 0)
-                AppSettings.LoadWindowState(this); // force default if settings missing
+            if (this.WindowState == FormWindowState.Normal && this.ClientSize.Width == 0)
+                AppSettings.LoadWindowState(this);   // force default if settings missing
 
-            var wpfCanvas = elementHost1.Child as WpfShortcutCanvas;
-                if (wpfCanvas == null) return;
-
-            // Wire WPF events
-            wpfCanvas.OnExecuteRequested += WpfCanvas_OnExecuteRequested;
-            wpfCanvas.OnLangToggleRequested += (s, args) => ToggleLanguage();
-            wpfCanvas.OnThemeToggleRequested += (s, args) => ToggleTheme();
-            wpfCanvas.OnLogFileRequested += (s, args) => ClickLogger.OpenLogFile();
-            wpfCanvas.OnSystemTrayRequested += (s, args) => MinimizeToTray();
-            wpfCanvas.OnDevInfoRequested += (s, args) => ShowDeveloperInfo();
+            var wpfCanvas = wpfShortcutCanvas1;       // direct reference, no cast needed
+            if (wpfCanvas == null) return;
 
             // Populate shortcuts
             var rawShortcuts = ShortcutsRepository.GetAll();
@@ -149,7 +167,7 @@ namespace Click2Key
                 wpfCanvas.Shortcuts.Add(node);
             }
 
-            // Apply initial theme & language
+            wpfCanvas.ApplyFavorites();
             wpfCanvas.SetTheme(isLightTheme);
             wpfCanvas.SetLanguage(isArabic);
         }
@@ -159,7 +177,7 @@ namespace Click2Key
         // ------------------------------------------------------------
         private async void WpfCanvas_OnExecuteRequested(object sender, ShortcutNode node)
         {
-            var wpfCanvas = elementHost1.Child as WpfShortcutCanvas;
+            var wpfCanvas = wpfShortcutCanvas1;
             if (wpfCanvas == null) return;
 
             SimulateKeystroke(node.Modifiers, node.MainKey);
@@ -169,22 +187,17 @@ namespace Click2Key
             wpfCanvas.ShortcutList.Items.Refresh();
         }
 
-        // ------------------------------------------------------------
-        // Core toggle logic
-        // ------------------------------------------------------------
         private void ToggleLanguage()
         {
             isArabic = !isArabic;
             UpdateTrayToggleText();
-            var wpfCanvas = elementHost1.Child as WpfShortcutCanvas;
-            wpfCanvas?.SetLanguage(isArabic);
+            wpfShortcutCanvas1?.SetLanguage(isArabic);
         }
 
         private void ToggleTheme()
         {
             isLightTheme = !isLightTheme;
-            var wpfCanvas = elementHost1.Child as WpfShortcutCanvas;
-            wpfCanvas?.SetTheme(isLightTheme);
+            wpfShortcutCanvas1?.SetTheme(isLightTheme);
             ApplyGradientBackground();
         }
 
@@ -211,26 +224,42 @@ namespace Click2Key
         // ------------------------------------------------------------
         // Tray restore & close
         // ------------------------------------------------------------
-        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
+        private void RestoreFromTray()
         {
             this.Show();
             this.WindowState = FormWindowState.Normal;
             this.ShowInTaskbar = true;
             appTrayIcon.Visible = false;
+            this.Activate();
             UpdateTrayToggleText();
+        }
+
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            RestoreFromTray();
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            // Save window state if the user is closing normally
-            if (e.CloseReason == CloseReason.UserClosing)
-                AppSettings.SaveWinodwState(this);
+            if (_exitRequested)
+            {
+                // Real exit – clean up and allow closing
+                eventCheckTimer?.Stop();
+                restoreEvent?.Dispose();
+                base.OnFormClosing(e);
+                return;
+            }
 
-            base.OnFormClosing(e); // X closes the app
+            // Normal close (X button, Alt+F4) → hide to tray
+            e.Cancel = true;
+            this.Hide();
+            this.ShowInTaskbar = false;
+            appTrayIcon.Visible = true;
+            UpdateTrayToggleText();
         }
 
         // ------------------------------------------------------------
-        // Optional gradient background for the WinForms shell
+        // Optional gradient background
         // ------------------------------------------------------------
         private void ApplyGradientBackground()
         {

@@ -60,7 +60,7 @@
         </StackPanel>
 
         <!-- Version -->
-        <TextBlock Text="Version 1.2" Foreground="#71717A" FontSize="16"
+        <TextBlock Text="Version 1.5" Foreground="#71717A" FontSize="16"
                    HorizontalAlignment="Center" Margin="0,0,0,30"/>
     </StackPanel>
 </UserControl>
