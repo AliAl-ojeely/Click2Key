@@ -164,15 +164,6 @@ namespace Click2Key
         }
 
         // ------------------------------------------------------------
-        // Stub methods for old WinForms buttons (keep the designer happy)
-        // ------------------------------------------------------------
-        private void mtbtnLang_Click(object sender, EventArgs e) => ToggleLanguage();
-        private void mtbtnTheme_Click(object sender, EventArgs e) => ToggleTheme();
-        private void mtrBtnLogFile_Click(object sender, EventArgs e) => ClickLogger.OpenLogFile();
-        private void btnSystemTray_Click(object sender, EventArgs e) => MinimizeToTray();
-        private void mtbtnDeveloperInfo_Click(object sender, EventArgs e) => ShowDeveloperInfo();
-
-        // ------------------------------------------------------------
         // Core toggle logic
         // ------------------------------------------------------------
         private void ToggleLanguage()
