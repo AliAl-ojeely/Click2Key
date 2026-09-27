@@ -11,19 +11,43 @@ namespace Click2Key
             InitializeComponent();
         }
 
-        private void Email_Click(object sender, RoutedEventArgs e)
+
+        private void GitHub_Click(
+            object sender,
+            RoutedEventArgs e)
         {
-            Process.Start(new ProcessStartInfo("mailto:alialojeely@gmail.com") { UseShellExecute = true });
+            Process.Start(
+                new ProcessStartInfo(
+                    "https://github.com/AliAl-ojeely")
+                {
+                    UseShellExecute = true
+                });
         }
 
-        private void GitHub_Click(object sender, RoutedEventArgs e)
+
+        private void Portfolio_Click(
+            object sender,
+            RoutedEventArgs e)
         {
-            Process.Start(new ProcessStartInfo("https://github.com/AliAl-ojeely") { UseShellExecute = true });
+            Process.Start(
+                new ProcessStartInfo(
+                    "https://alial-ojeely.github.io/")
+                {
+                    UseShellExecute = true
+                });
         }
 
-        private void Portfolio_Click(object sender, RoutedEventArgs e)
+
+        private void Email_Click(
+            object sender,
+            RoutedEventArgs e)
         {
-            Process.Start(new ProcessStartInfo("https://alial-ojeely.github.io/") { UseShellExecute = true });
+            Process.Start(
+                new ProcessStartInfo(
+                    "mailto:alialojeely@gmail.com")
+                {
+                    UseShellExecute = true
+                });
         }
     }
 }

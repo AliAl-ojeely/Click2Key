@@ -3,346 +3,1055 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Click2Key"
              Background="{DynamicResource AppBackground}"
-             FontFamily="Cairo, Segoe UI">
+             FontFamily="Cairo, Segoe UI"
+             TextOptions.TextFormattingMode="Display"
+             SnapsToDevicePixels="True"
+             UseLayoutRounding="True">
 
     <UserControl.Resources>
+
+        <!-- ========================================================= -->
+        <!-- CONVERTERS                                                -->
+        <!-- ========================================================= -->
+
         <local:FavoriteStarConverter x:Key="FavoriteStarConverter"/>
 
-        <SolidColorBrush x:Key="AppBackground" Color="#09090B"/>
-        <SolidColorBrush x:Key="CardBackground" Color="#18181B"/>
-        <SolidColorBrush x:Key="PrimaryText" Color="#F4F4F5"/>
-        <SolidColorBrush x:Key="SecondaryText" Color="#A1A1AA"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#27272A"/>
-        <SolidColorBrush x:Key="NavButtonBg" Color="#27272A"/>
-        <SolidColorBrush x:Key="NavButtonHover" Color="#3F3F46"/>
-        <SolidColorBrush x:Key="ComboBg" Color="#27272A"/>
-        <SolidColorBrush x:Key="ComboFg" Color="#F4F4F5"/>
 
-        <Style x:Key="ModernButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="{DynamicResource NavButtonBg}"/>
-            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="16,9"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+        <!-- ========================================================= -->
+        <!-- THEME BRUSHES                                             -->
+        <!--                                                           -->
+        <!-- Each brush has ONE binding to ThemePalette.               -->
+        <!-- Controls then use fast StaticResource references.         -->
+        <!-- ========================================================= -->
+
+        <SolidColorBrush x:Key="AppBackground"
+                         Color="{Binding AppBackgroundColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+        <SolidColorBrush x:Key="CardBackground"
+                         Color="{Binding CardBackgroundColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+        <SolidColorBrush x:Key="PrimaryText"
+                         Color="{Binding PrimaryTextColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+        <SolidColorBrush x:Key="SecondaryText"
+                         Color="{Binding SecondaryTextColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+        <SolidColorBrush x:Key="BorderColor"
+                         Color="{Binding BorderColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+        <SolidColorBrush x:Key="NavButtonBg"
+                         Color="{Binding NavButtonBackgroundColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+        <SolidColorBrush x:Key="NavButtonHover"
+                         Color="{Binding NavButtonHoverColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+        <SolidColorBrush x:Key="ComboBg"
+                         Color="{Binding ComboBackgroundColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+        <SolidColorBrush x:Key="ComboFg"
+                         Color="{Binding ComboForegroundColor,
+                                         Source={x:Static local:ThemePalette.Instance}}"/>
+
+
+        <!-- ========================================================= -->
+        <!-- ACCENT COLORS                                             -->
+        <!-- ========================================================= -->
+
+        <SolidColorBrush x:Key="AccentBrush"
+                         Color="#2563EB"/>
+
+        <SolidColorBrush x:Key="AccentHoverBrush"
+                         Color="#3B82F6"/>
+
+        <SolidColorBrush x:Key="AccentPressedBrush"
+                         Color="#1D4ED8"/>
+
+
+        <!-- ========================================================= -->
+        <!-- STANDARD BUTTON                                          -->
+        <!-- ========================================================= -->
+
+        <Style x:Key="ModernButtonStyle"
+               TargetType="Button">
+
+            <Setter Property="Background"
+                    Value="{StaticResource NavButtonBg}"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource PrimaryText}"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource BorderColor}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Padding"
+                    Value="15,8"/>
+
+            <Setter Property="MinHeight"
+                    Value="40"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
             <Setter Property="Template">
+
                 <Setter.Value>
+
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
+
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              Margin="{TemplateBinding Padding}"/>
+                                CornerRadius="9"
+                                SnapsToDevicePixels="True">
+
+                            <ContentPresenter
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                Margin="{TemplateBinding Padding}"
+                                RecognizesAccessKey="True"/>
+
                         </Border>
+
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource NavButtonHover}"/>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Background"
+                                        Value="{StaticResource NavButtonHover}"/>
+
                             </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource AppBackground}"/>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Opacity"
+                                        Value="0.80"/>
+
                             </Trigger>
+
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+
+                                <Setter TargetName="ButtonBorder"
+                                        Property="Opacity"
+                                        Value="0.50"/>
+
+                            </Trigger>
+
                         </ControlTemplate.Triggers>
+
                     </ControlTemplate>
+
                 </Setter.Value>
+
             </Setter>
+
         </Style>
 
-        <Style x:Key="ActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-            <Setter Property="Background" Value="#1E3A8A"/>
-            <Setter Property="BorderBrush" Value="#2563EB"/>
-            <Setter Property="Foreground" Value="#FFFFFF"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#2563EB"/>
-                </Trigger>
-            </Style.Triggers>
+
+        <!-- ========================================================= -->
+        <!-- EXECUTE BUTTON                                           -->
+        <!-- ========================================================= -->
+
+        <Style x:Key="ActionButtonStyle"
+               TargetType="Button">
+
+            <Setter Property="Background"
+                    Value="{StaticResource AccentBrush}"/>
+
+            <Setter Property="Foreground"
+                    Value="White"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource AccentBrush}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+
+            <Setter Property="Height"
+                    Value="42"/>
+
+            <Setter Property="MinHeight"
+                    Value="42"/>
+
+            <Setter Property="Padding"
+                    Value="12,6"/>
+
+            <Setter Property="Cursor"
+                    Value="Hand"/>
+
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Button">
+
+                        <Border x:Name="ActionBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="9">
+
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Margin="{TemplateBinding Padding}"/>
+
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+
+                                <Setter TargetName="ActionBorder"
+                                        Property="Background"
+                                        Value="{StaticResource AccentHoverBrush}"/>
+
+                                <Setter TargetName="ActionBorder"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource AccentHoverBrush}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsPressed"
+                                     Value="True">
+
+                                <Setter TargetName="ActionBorder"
+                                        Property="Background"
+                                        Value="{StaticResource AccentPressedBrush}"/>
+
+                                <Setter TargetName="ActionBorder"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource AccentPressedBrush}"/>
+
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+
+                                <Setter TargetName="ActionBorder"
+                                        Property="Opacity"
+                                        Value="0.55"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
         </Style>
+
+
+        <!-- ========================================================= -->
+        <!-- ICON BUTTON                                              -->
+        <!-- ========================================================= -->
+
+        <Style x:Key="IconButtonStyle"
+               TargetType="Button"
+               BasedOn="{StaticResource ModernButtonStyle}">
+
+            <Setter Property="Width"
+                    Value="42"/>
+
+            <Setter Property="Height"
+                    Value="42"/>
+
+            <Setter Property="MinHeight"
+                    Value="42"/>
+
+            <Setter Property="Padding"
+                    Value="0"/>
+
+            <Setter Property="FontSize"
+                    Value="18"/>
+
+        </Style>
+
+
+        <!-- ========================================================= -->
+        <!-- SHORTCUT CARD                                            -->
+        <!-- ========================================================= -->
+
+        <Style x:Key="ShortcutCardStyle"
+               TargetType="Border">
+
+            <Setter Property="Background"
+                    Value="{StaticResource CardBackground}"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource BorderColor}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="CornerRadius"
+                    Value="14"/>
+
+            <Setter Property="Padding"
+                    Value="16"/>
+
+            <Style.Triggers>
+
+                <Trigger Property="IsMouseOver"
+                         Value="True">
+
+                    <Setter Property="BorderBrush"
+                            Value="{StaticResource AccentHoverBrush}"/>
+
+                </Trigger>
+
+            </Style.Triggers>
+
+        </Style>
+
+
+        <!-- ========================================================= -->
+        <!-- COMBOBOX                                                 -->
+        <!-- ========================================================= -->
 
         <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="{DynamicResource NavButtonBg}"/>
-            <Setter Property="Foreground" Value="{DynamicResource ComboFg}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+
+            <Setter Property="Background"
+                    Value="{StaticResource NavButtonBg}"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ComboFg}"/>
+
+            <Setter Property="BorderBrush"
+                    Value="{StaticResource BorderColor}"/>
+
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="Padding"
+                    Value="10,6"/>
+
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center"/>
+
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Center"/>
+
             <Setter Property="Template">
+
                 <Setter.Value>
+
                     <ControlTemplate TargetType="ComboBox">
+
                         <Grid>
+
                             <ToggleButton x:Name="ToggleButton"
                                           Background="{TemplateBinding Background}"
                                           BorderBrush="{TemplateBinding BorderBrush}"
                                           BorderThickness="{TemplateBinding BorderThickness}"
-                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          IsChecked="{Binding IsDropDownOpen,
+                                                              Mode=TwoWay,
+                                                              RelativeSource={RelativeSource TemplatedParent}}"
                                           ClickMode="Press">
+
                                 <ToggleButton.Template>
+
                                     <ControlTemplate TargetType="ToggleButton">
-                                        <Border x:Name="border"
+
+                                        <Border x:Name="ComboBorder"
                                                 Background="{TemplateBinding Background}"
                                                 BorderBrush="{TemplateBinding BorderBrush}"
                                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                                CornerRadius="6">
-                                            <ContentPresenter HorizontalAlignment="Center"
-                                                              VerticalAlignment="Center"
-                                                              Margin="{TemplateBinding Padding}"/>
+                                                CornerRadius="9">
+
+                                            <Grid>
+
+                                                <ContentPresenter
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Margin="8,0,24,0"/>
+
+                                                <Path Data="M0,0 L4,4 L8,0"
+                                                      Stroke="{StaticResource ComboFg}"
+                                                      StrokeThickness="1.5"
+                                                      HorizontalAlignment="Right"
+                                                      VerticalAlignment="Center"
+                                                      Margin="0,0,10,0"/>
+
+                                            </Grid>
+
                                         </Border>
+
                                         <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="border" Property="Background" Value="{DynamicResource NavButtonHover}"/>
+
+                                            <Trigger Property="IsMouseOver"
+                                                     Value="True">
+
+                                                <Setter TargetName="ComboBorder"
+                                                        Property="Background"
+                                                        Value="{StaticResource NavButtonHover}"/>
+
                                             </Trigger>
-                                            <Trigger Property="IsPressed" Value="True">
-                                                <Setter TargetName="border" Property="Background" Value="{DynamicResource AppBackground}"/>
+
+                                            <Trigger Property="IsPressed"
+                                                     Value="True">
+
+                                                <Setter TargetName="ComboBorder"
+                                                        Property="Opacity"
+                                                        Value="0.82"/>
+
                                             </Trigger>
+
                                         </ControlTemplate.Triggers>
+
                                     </ControlTemplate>
+
                                 </ToggleButton.Template>
+
                             </ToggleButton>
-                            <ContentPresenter x:Name="ContentSite"
-                                              Content="{TemplateBinding SelectionBoxItem}"
-                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
-                                              Margin="{TemplateBinding Padding}"
-                                              VerticalAlignment="Center"
-                                              HorizontalAlignment="Left"/>
-                            <Path x:Name="Arrow"
-                                  Fill="{DynamicResource ComboFg}"
-                                  Data="M0,0 L3,4 L6,0 Z"
-                                  HorizontalAlignment="Right"
-                                  VerticalAlignment="Center"
-                                  Margin="0,0,8,0"/>
-                            <Popup x:Name="Popup" Placement="Bottom"
-                                   IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"
-                                   AllowsTransparency="True" Focusable="False">
-                                <Grid Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                      Background="{DynamicResource ComboBg}">
-                                    <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}">
+
+
+                            <ContentPresenter
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Margin="6,0,24,0"
+                                IsHitTestVisible="False"/>
+
+
+                            <Popup x:Name="Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{Binding IsDropDownOpen,
+                                                    RelativeSource={RelativeSource TemplatedParent}}"
+                                   AllowsTransparency="True"
+                                   Focusable="False">
+
+                                <Border
+                                    Background="{StaticResource ComboBg}"
+                                    BorderBrush="{StaticResource BorderColor}"
+                                    BorderThickness="1"
+                                    CornerRadius="9"
+                                    Margin="0,5,0,0"
+                                    MinWidth="{Binding ActualWidth,
+                                                      RelativeSource={RelativeSource AncestorType=ComboBox}}">
+
+                                    <ScrollViewer MaxHeight="320"
+                                                  Margin="3">
+
                                         <StackPanel IsItemsHost="True"/>
+
                                     </ScrollViewer>
-                                </Grid>
+
+                                </Border>
+
                             </Popup>
+
                         </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Foreground" Value="{DynamicResource SecondaryText}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
+
                     </ControlTemplate>
+
                 </Setter.Value>
+
             </Setter>
+
         </Style>
+
+
+        <!-- ========================================================= -->
+        <!-- COMBOBOX ITEM                                            -->
+        <!-- ========================================================= -->
 
         <Style TargetType="ComboBoxItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource ComboFg}"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Padding" Value="8,4"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Foreground"
+                    Value="{StaticResource ComboFg}"/>
+
+            <Setter Property="FontSize"
+                    Value="13"/>
+
+            <Setter Property="Padding"
+                    Value="12,8"/>
+
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Center"/>
+
             <Setter Property="Template">
+
                 <Setter.Value>
+
                     <ControlTemplate TargetType="ComboBoxItem">
-                        <Border x:Name="Border" Background="{TemplateBinding Background}"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter/>
+
+                        <Border x:Name="ItemBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="2">
+
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+
                         </Border>
+
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource NavButtonHover}"/>
+
+                            <Trigger Property="IsHighlighted"
+                                     Value="True">
+
+                                <Setter TargetName="ItemBorder"
+                                        Property="Background"
+                                        Value="{StaticResource NavButtonHover}"/>
+
                             </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource BorderColor}"/>
+
+                            <Trigger Property="IsSelected"
+                                     Value="True">
+
+                                <Setter TargetName="ItemBorder"
+                                        Property="Background"
+                                        Value="{StaticResource AccentBrush}"/>
+
+                                <Setter Property="Foreground"
+                                        Value="White"/>
+
                             </Trigger>
+
                         </ControlTemplate.Triggers>
+
                     </ControlTemplate>
+
                 </Setter.Value>
+
             </Setter>
+
         </Style>
 
-        <Style x:Key="ModernScrollThumb" TargetType="Thumb">
+
+        <!-- ========================================================= -->
+        <!-- SCROLLBAR                                                -->
+        <!-- ========================================================= -->
+
+        <Style x:Key="ModernScrollThumb"
+               TargetType="Thumb">
+
             <Setter Property="Template">
+
                 <Setter.Value>
+
                     <ControlTemplate TargetType="Thumb">
-                        <Border Background="{DynamicResource NavButtonHover}" CornerRadius="4" Margin="2,0,2,0"/>
+
+                        <Border
+                            Background="{StaticResource NavButtonHover}"
+                            CornerRadius="4"
+                            Margin="2,1"/>
+
                     </ControlTemplate>
+
                 </Setter.Value>
+
             </Setter>
+
         </Style>
+
 
         <Style TargetType="ScrollBar">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Width" Value="12"/>
+
+            <Setter Property="Background"
+                    Value="Transparent"/>
+
+            <Setter Property="Width"
+                    Value="10"/>
+
             <Setter Property="Template">
+
                 <Setter.Value>
+
                     <ControlTemplate TargetType="ScrollBar">
-                        <Grid Background="{TemplateBinding Background}">
-                            <Track x:Name="PART_Track" IsDirectionReversed="true">
+
+                        <Grid Background="Transparent">
+
+                            <Track x:Name="PART_Track"
+                                   IsDirectionReversed="True">
+
                                 <Track.Thumb>
-                                    <Thumb Style="{StaticResource ModernScrollThumb}"/>
+
+                                    <Thumb
+                                        Style="{StaticResource ModernScrollThumb}"/>
+
                                 </Track.Thumb>
+
                             </Track>
+
                         </Grid>
+
                     </ControlTemplate>
+
                 </Setter.Value>
+
             </Setter>
+
         </Style>
+
     </UserControl.Resources>
 
-    <Grid Margin="24">
+
+    <!-- ============================================================= -->
+    <!-- MAIN LAYOUT                                                   -->
+    <!-- ============================================================= -->
+
+    <Grid Margin="20,16,20,16">
+
         <Grid.RowDefinitions>
+
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,0,0,24">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0">
-                <TextBlock x:Name="txtMainTitle"
-                           Text="Connection Between You and Keyboard"
-                           Foreground="{DynamicResource PrimaryText}"
-                           FontSize="32" FontWeight="Light"
+        <!-- ========================================================= -->
+        <!-- HEADER                                                    -->
+        <!-- ========================================================= -->
+
+        <Border Grid.Row="0"
+                Background="{StaticResource CardBackground}"
+                BorderBrush="{StaticResource BorderColor}"
+                BorderThickness="1"
+                CornerRadius="16"
+                Padding="18,14"
+                Margin="0,0,0,12">
+
+            <Grid>
+
+                <Grid.RowDefinitions>
+
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+
+                </Grid.RowDefinitions>
+
+
+                <!-- TITLE -->
+
+                <Grid Grid.Row="0"
+                      Margin="10,0,10,12">
+
+                    <Viewbox
+                        Stretch="Uniform"
+                        StretchDirection="DownOnly"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        MaxHeight="38">
+
+                        <TextBlock
+                            x:Name="txtMainTitle"
+                            Text="Connection Between You and Keyboard"
+                            Foreground="{StaticResource PrimaryText}"
+                            FontSize="28"
+                            FontWeight="SemiBold"
+                            TextAlignment="Center"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            TextWrapping="NoWrap"/>
+
+                    </Viewbox>
+
+                </Grid>
+
+
+                <!-- HEADER ACTIONS -->
+
+                <WrapPanel Grid.Row="1"
                            HorizontalAlignment="Center"
-                           Margin="0,0,0,8"/>
+                           VerticalAlignment="Center">
 
-                <Rectangle Height="1" Fill="{DynamicResource BorderColor}"
-                           HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button x:Name="btnLang" Content="AR/EN"
-                            Click="BtnLang_Click" Style="{StaticResource ModernButtonStyle}"
-                            Margin="0,0,12,0"/>
-                    <Button x:Name="btnTheme" Content="THEME"
-                            Click="BtnTheme_Click" Style="{StaticResource ModernButtonStyle}"
-                            Margin="0,0,12,0"/>
-                    <Button x:Name="btnLogFile" Content="LOG FILE"
-                            Click="BtnLogFile_Click" Style="{StaticResource ModernButtonStyle}"
-                            Margin="0,0,12,0"/>
-                    <Button x:Name="btnSystemTray" Content="SYSTEM TRAY"
-                            Click="BtnSystemTray_Click" Style="{StaticResource ModernButtonStyle}"
-                            Margin="0,0,12,0"/>
-                </StackPanel>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                <Button x:Name="btnDevInfo" Content="DEVELOPER INFO"
-                        Click="BtnDevInfo_Click" Style="{StaticResource ModernButtonStyle}"
-                        Margin="0,0,24,0"/>
-
-                <TextBlock x:Name="txtTimerLabel" Text="Timer:"
-                           Foreground="{DynamicResource SecondaryText}"
-                           FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
-
-                <ComboBox Name="cmbTimerDelay" MinWidth="80" Height="36"
-                          HorizontalAlignment="Stretch"
-                          SelectedIndex="0"
-                          Background="{DynamicResource NavButtonBg}"
-                          Foreground="{DynamicResource PrimaryText}"
-                          FontSize="15"
-                          VerticalContentAlignment="Center"
-                          HorizontalContentAlignment="Center">
-                    <ComboBoxItem Content="0"/>
-                    <ComboBoxItem Content="1"/>
-                    <ComboBoxItem Content="2"/>
-                    <ComboBoxItem Content="3"/>
-                    <ComboBoxItem Content="4"/>
-                    <ComboBoxItem Content="5"/>
-                </ComboBox>
-
-                <Button x:Name="btnToggleFavorites" Content="☆"
+                    <Button
+                        x:Name="btnDevInfo"
+                        Content="DEVELOPER INFO"
+                        Click="BtnDevInfo_Click"
                         Style="{StaticResource ModernButtonStyle}"
-                        Width="44" Height="36" Margin="10,0,0,0"
-                        FontSize="24" Padding="0,-2,0,0"
+                        MinWidth="135"
+                        Margin="4"/>
+
+
+                    <Border
+                        Width="1"
+                        Height="26"
+                        Background="{StaticResource BorderColor}"
+                        VerticalAlignment="Center"
+                        Margin="8,4"/>
+
+
+                    <TextBlock
+                        x:Name="txtTimerLabel"
+                        Text="Timer:"
+                        Foreground="{StaticResource SecondaryText}"
+                        FontSize="14"
+                        FontWeight="SemiBold"
+                        VerticalAlignment="Center"
+                        Margin="8,4"/>
+
+
+                    <ComboBox
+                        x:Name="cmbTimerDelay"
+                        Width="78"
+                        Height="40"
+                        SelectedIndex="0"
+                        Margin="4">
+
+                        <ComboBoxItem Content="0"/>
+                        <ComboBoxItem Content="1"/>
+                        <ComboBoxItem Content="2"/>
+                        <ComboBoxItem Content="3"/>
+                        <ComboBoxItem Content="4"/>
+                        <ComboBoxItem Content="5"/>
+                        <ComboBoxItem Content="6"/>
+                        <ComboBoxItem Content="7"/>
+                        <ComboBoxItem Content="8"/>
+                        <ComboBoxItem Content="9"/>
+                        <ComboBoxItem Content="10"/>
+
+                    </ComboBox>
+
+
+                    <Button
+                        x:Name="btnToggleFavorites"
+                        Content="☆"
+                        Style="{StaticResource IconButtonStyle}"
+                        Width="46"
+                        Height="40"
+                        MinHeight="40"
+                        FontSize="22"
+                        Padding="0"
+                        Margin="4"
                         Click="BtnToggleFavorites_Click"
                         ToolTip="Show Favorites Only"/>
-            </StackPanel>
-        </Grid>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly">
+                </WrapPanel>
 
-            <ItemsControl Name="ShortcutList" VerticalAlignment="Top">
+            </Grid>
+
+        </Border>
+
+
+        <!-- ========================================================= -->
+        <!-- TOOLBAR + FILTERS                                        -->
+        <!-- ========================================================= -->
+
+        <Border Grid.Row="1"
+                Background="{StaticResource CardBackground}"
+                BorderBrush="{StaticResource BorderColor}"
+                BorderThickness="1"
+                CornerRadius="14"
+                Padding="8"
+                Margin="0,0,0,12">
+
+            <WrapPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+
+                <Button
+                    x:Name="btnLang"
+                    Content="AR/EN"
+                    Click="BtnLang_Click"
+                    Style="{StaticResource ModernButtonStyle}"
+                    MinWidth="96"
+                    Margin="5"/>
+
+
+                <Button
+                    x:Name="btnTheme"
+                    Content="THEME"
+                    Click="BtnTheme_Click"
+                    Style="{StaticResource ModernButtonStyle}"
+                    MinWidth="100"
+                    Margin="5"/>
+
+
+                <Button
+                    x:Name="btnLogFile"
+                    Content="LOG FILE"
+                    Click="BtnLogFile_Click"
+                    Style="{StaticResource ModernButtonStyle}"
+                    MinWidth="110"
+                    Margin="5"/>
+
+
+                <Button
+                    x:Name="btnSystemTray"
+                    Content="SYSTEM TRAY"
+                    Click="BtnSystemTray_Click"
+                    Style="{StaticResource ModernButtonStyle}"
+                    MinWidth="125"
+                    Margin="5"/>
+
+
+                <Border
+                    Width="1"
+                    Height="28"
+                    Background="{StaticResource BorderColor}"
+                    Margin="12,5"
+                    VerticalAlignment="Center"/>
+
+
+                <!-- CATEGORY -->
+
+                <TextBlock
+                    x:Name="txtCategoryLabel"
+                    Text="Category:"
+                    Foreground="{StaticResource SecondaryText}"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    VerticalAlignment="Center"
+                    Margin="5,5,7,5"/>
+
+
+                <ComboBox
+                    x:Name="cmbCategory"
+                    Width="205"
+                    Height="40"
+                    Margin="0,5,12,5"
+                    SelectionChanged="CmbCategory_SelectionChanged"/>
+
+
+                <!-- SORT -->
+
+                <TextBlock
+                    x:Name="txtSortLabel"
+                    Text="Sort by:"
+                    Foreground="{StaticResource SecondaryText}"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    VerticalAlignment="Center"
+                    Margin="5,5,7,5"/>
+
+
+                <ComboBox
+                    x:Name="cmbSortBy"
+                    Width="170"
+                    Height="40"
+                    Margin="0,5,5,5"
+                    SelectionChanged="CmbSortBy_SelectionChanged"/>
+
+            </WrapPanel>
+
+        </Border>
+
+
+        <!-- ========================================================= -->
+        <!-- SHORTCUTS                                                -->
+        <!-- ========================================================= -->
+
+
+        <ScrollViewer
+        x:Name="ShortcutScrollViewer"
+        Grid.Row="2"
+        VerticalScrollBarVisibility="Auto"
+        HorizontalScrollBarVisibility="Disabled"
+        HorizontalContentAlignment="Center"
+        PanningMode="VerticalOnly"
+        IsDeferredScrollingEnabled="True"
+            SizeChanged="ShortcutScrollViewer_SizeChanged">
+
+            <ItemsControl
+        x:Name="ShortcutList"
+        VerticalAlignment="Top"
+        HorizontalAlignment="Center"
+        HorizontalContentAlignment="Center">
 
                 <ItemsControl.ItemsPanel>
+
                     <ItemsPanelTemplate>
-                        <UniformGrid Columns="5"/>
+
+                        <WrapPanel
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Left"
+                    ItemWidth="270"
+                    ItemHeight="190"/>
+
                     </ItemsPanelTemplate>
+
                 </ItemsControl.ItemsPanel>
 
+
                 <ItemsControl.ItemTemplate>
+
                     <DataTemplate>
-                        <Border Background="{DynamicResource CardBackground}"
-                                BorderBrush="{DynamicResource BorderColor}"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Margin="6"
-                                Padding="12"
-                                VerticalAlignment="Top">
+
+                        <Border
+                    Style="{StaticResource ShortcutCardStyle}"
+                    Width="258"
+                    Height="178"
+                    Margin="6">
+
                             <Grid>
+
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Text="{Binding DisplayTitle}"
-                                           Foreground="{DynamicResource PrimaryText}"
-                                           FontWeight="SemiBold" FontSize="16"
-                                           HorizontalAlignment="Center"
-                                           TextWrapping="Wrap"
-                                           Grid.Row="0"/>
 
-                                <TextBlock Text="{Binding ExecutionCount, StringFormat='Count: {0}'}"
-                                           Foreground="{DynamicResource SecondaryText}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           FontSize="15"
-                                           Grid.Row="1"/>
+                                <!-- SHORTCUT TITLE -->
 
-                                <Grid Grid.Row="2">
+                                <TextBlock
+                            Grid.Row="0"
+                            Text="{Binding DisplayTitle}"
+                            Foreground="{StaticResource PrimaryText}"
+                            FontSize="16"
+                            FontWeight="SemiBold"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            TextAlignment="Center"
+                            TextWrapping="NoWrap"
+                            TextTrimming="CharacterEllipsis"
+                            MinHeight="26"/>
+
+
+                                <!-- COUNT -->
+
+                                <Border
+                            Grid.Row="1"
+                            Background="{StaticResource NavButtonBg}"
+                            CornerRadius="8"
+                            HorizontalAlignment="Center"
+                            Padding="10,4"
+                            Margin="0,11,0,0">
+
+                                    <TextBlock
+                                Text="{Binding ExecutionCount,
+                                               StringFormat='Count: {0}'}"
+                                Foreground="{StaticResource SecondaryText}"
+                                FontSize="13"
+                                FontWeight="SemiBold"/>
+
+                                </Border>
+
+
+                                <Grid Grid.Row="2"/>
+
+
+                                <!-- ACTIONS -->
+
+                                <Grid Grid.Row="3">
+
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <Button Content="{Binding ExecuteButtonText}"
-                                            Click="ExecuteButton_Click"
-                                            Style="{StaticResource ActionButtonStyle}"
-                                            Padding="8,6" FontSize="14"
-                                            Margin="0,0,8,0"/>
 
-                                    <Button Grid.Column="1" Content="ⓘ"
-                                            Width="36" Height="36"
-                                            Style="{StaticResource ModernButtonStyle}"
-                                            Padding="0"
-                                            ToolTip="{Binding DisplayInfo}"
-                                            FontSize="16"/>
+                                    <!-- EXECUTE -->
 
-                                    <Button Grid.Column="2" Width="36" Height="36"
-                                            Margin="6,0,0,0"
-                                            Style="{StaticResource ModernButtonStyle}"
-                                            Padding="0" FontSize="24"
-                                            Click="ToggleFavorite_Click"
-                                            Tag="{Binding}">
+                                    <Button
+                                Grid.Column="0"
+                                Content="{Binding ExecuteButtonText}"
+                                Click="ExecuteButton_Click"
+                                Style="{StaticResource ActionButtonStyle}"
+                                Margin="0,0,8,0"/>
+
+
+                                    <!-- INFO -->
+
+                                    <Button
+                                Grid.Column="1"
+                                Content="ⓘ"
+                                Style="{StaticResource IconButtonStyle}"
+                                ToolTip="{Binding DisplayInfo}"
+                                FontSize="17"/>
+
+
+                                    <!-- FAVORITE -->
+
+                                    <Button
+                                Grid.Column="2"
+                                Style="{StaticResource IconButtonStyle}"
+                                Margin="8,0,0,0"
+                                Padding="0"
+                                FontSize="21"
+                                Click="ToggleFavorite_Click"
+                                Tag="{Binding}">
+
                                         <Button.Content>
-                                            <TextBlock Text="{Binding IsFavorite, Converter={StaticResource FavoriteStarConverter}}"
-                                                       VerticalAlignment="Center" 
-                                                       HorizontalAlignment="Center"
-                                                       Margin="0,-2,0,0"/>
+
+                                            <TextBlock
+                                        Text="{Binding IsFavorite,
+                                        Converter={StaticResource FavoriteStarConverter}}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Margin="0,-2,0,0"/>
+
                                         </Button.Content>
+
                                     </Button>
+
                                 </Grid>
+
                             </Grid>
+
                         </Border>
+
                     </DataTemplate>
+
                 </ItemsControl.ItemTemplate>
+
             </ItemsControl>
+
         </ScrollViewer>
+
     </Grid>
+
 </UserControl>
