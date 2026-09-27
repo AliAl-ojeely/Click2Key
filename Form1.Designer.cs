@@ -39,7 +39,7 @@ namespace Click2Key
             this.Controls.Add(this.elementHost1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "frmMain";
-            this.Text = "Click2Key v1.7";
+            this.Text = "Click2Key v2.0";
             this.Load += new System.EventHandler(this.frmMain_Load);
             this.ResumeLayout(false);
 
